@@ -20,6 +20,7 @@ interface FileUploadZoneProps {
   maxFiles?: number;
   maxSize?: number;
   multiple?: boolean;
+  disabled?: boolean;
 }
 
 export function FileUploadZone({
@@ -28,6 +29,7 @@ export function FileUploadZone({
   maxFiles = 10,
   maxSize = 50 * 1024 * 1024, // 50MB
   multiple = true,
+  disabled = false,
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -91,7 +93,7 @@ export function FileUploadZone({
     multiple,
     onDragEnter: () => setIsDragging(true),
     onDragLeave: () => setIsDragging(false),
-    disabled: isUploading,
+    disabled: isUploading || disabled,
   });
 
   return (
@@ -104,6 +106,7 @@ export function FileUploadZone({
             ? "border-primary bg-primary/5"
             : "border-border hover:border-primary/50 hover:bg-muted/50",
           isUploading && "opacity-50 cursor-not-allowed",
+          disabled && "opacity-50 cursor-not-allowed",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         )}
       >
