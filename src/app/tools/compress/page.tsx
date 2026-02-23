@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { FileUploadZone } from "@/components/file-upload-zone";
+import { FileUploadZone, UploadedFile } from "@/components/file-upload-zone";
 import { Button } from "@/components/ui/button";
 import { 
   compressPDFAction, 
@@ -14,7 +14,6 @@ import {
   CompressionResult 
 } from "@/lib/actions/compress-pdf";
 import { ProcessedFile } from "@/types/pdf";
-import { UploadedFile } from "@/components/file-upload-zone";
 import { 
   Shrink,
   Download, 
@@ -34,8 +33,8 @@ interface CompressPDFPageProps {
 type QualityOption = {
   value: CompressionQuality;
   label: string;
-  icon: React.ReactNode;
   description: string;
+  icon: React.ReactNode;
   dpi: number;
 };
 
@@ -44,7 +43,7 @@ const qualityOptions: QualityOption[] = [
     value: "extreme",
     label: "Extreme",
     icon: <Zap className="w-5 h-5" />,
-    description: "Smallest file size, best for screen viewing",
+    description: "Smallest file size, 72 DPI - best for screen viewing",
     dpi: 72,
   },
   {
@@ -75,24 +74,15 @@ export default function CompressPDFPage() {
 
   // Check if Ghostscript is available on mount
   useEffect(() => {
-    const checkGS = async () => {
+    const checkGhostscript = async () => {
       try {
         const result = await checkGhostscriptAction();
         setGhostscriptAvailable(result.installed);
-        if (!result.installed) {
-          setError(result.message);
-          toast.error("Ghostscript not available", {
-            description: result.message,
-            icon: <AlertCircle className="h-4 w-4 text-red-500" />,
-          });
-        }
-      } catch (err) {
+      } catch {
         setGhostscriptAvailable(false);
-        setError("Failed to check Ghostscript availability");
       }
     };
-    
-    checkGS();
+    checkGhostscript();
   }, []);
 
   // Handle file selection
@@ -131,14 +121,6 @@ export default function CompressPDFPage() {
       const result: CompressionResult = await compressPDFAction(formData);
 
       if (result.success && result.blob) {
-        const url = URL.createObjectURL(result.blob);
-        
-        setProcessedFile({
-          name: result.filename || "compressed.pdf",
-          blob: result.blob,
-          url,
-        });
-        
         setCompressedSize(result.compressedSize || 0);
         setStatus("success");
 
@@ -147,41 +129,38 @@ export default function CompressPDFPage() {
           result.compressedSize || 0
         );
 
-        toast.success("PDF compressed successfully!", {
-          description: `${formatFileSize(result.originalSize || 0)} → ${formatFileSize(result.compressedSize || 0)} (${ratio}% smaller)`,
-          icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+        const processed: ProcessedFile = {
+          name: file.name.replace(/\.pdf$/i, "") + "_compressed.pdf",
+          blob: result.blob,
+          url: URL.createObjectURL(result.blob),
+        };
+
+        setProcessedFile(processed);
+
+        toast.success("PDF compressed successfully", {
+          description: `Size reduced by ${ratio}%`,
         });
       } else {
         throw new Error(result.error || "Compression failed");
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      setError(errorMessage);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       setStatus("error");
-      
+      setError(errorMessage);
+
       toast.error("Compression failed", {
         description: errorMessage,
-        icon: <AlertCircle className="h-4 w-4 text-red-500" />,
       });
     }
   }, [file, quality, ghostscriptAvailable]);
 
-  // Handle download
-  const handleDownload = useCallback(() => {
-    if (!processedFile) return;
-    
-    const link = document.createElement("a");
-    link.href = processedFile.url;
-    link.download = processedFile.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [processedFile]);
-
   // Handle reset
   const handleReset = useCallback(() => {
+    if (processedFile?.url) {
+      URL.revokeObjectURL(processedFile.url);
+    }
     handleFileRemove();
-  }, [handleFileRemove]);
+  }, [processedFile, handleFileRemove]);
 
   const compressionRatio = originalSize > 0 && compressedSize > 0
     ? calculateCompressionRatio(originalSize, compressedSize)
@@ -190,7 +169,6 @@ export default function CompressPDFPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
@@ -198,96 +176,93 @@ export default function CompressPDFPage() {
           </div>
           <h1 className="text-3xl font-bold mb-2">Compress PDF</h1>
           <p className="text-muted-foreground">
-            Reduce PDF file size while maintaining quality using Ghostscript
+            Reduce PDF file size while maintaining quality
           </p>
         </div>
 
         {/* Ghostscript availability warning */}
         {ghostscriptAvailable === false && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
               <div>
-                <h3 className="font-medium text-red-700">Ghostscript Not Available</h3>
-                <p className="text-sm text-red-600 mt-1">
-                  {error || "Please install Ghostscript on your server to use this feature."}
-                </p>
-                <p className="text-sm text-red-600 mt-2">
-                  <code className="bg-red-100 px-2 py-1 rounded">sudo apt-get install ghostscript</code> (Linux)
-                  <br />
-                  <code className="bg-red-100 px-2 py-1 rounded">brew install ghostscript</code> (macOS)
+                <h3 className="font-medium text-yellow-800">Ghostscript not available</h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  PDF compression requires Ghostscript to be installed on the server.
+                  Please contact the site administrator.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Quality selection */}
+        {/* File upload */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-3">
-            Compression Level
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {qualityOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setQuality(option.value)}
-                disabled={status === "processing" || ghostscriptAvailable === false}
-                className={`
-                  p-4 rounded-lg border-2 transition-all text-left
-                  ${quality === option.value
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                  }
-                  ${status === "processing" || ghostscriptAvailable === false ? "opacity-50 cursor-not-allowed" : ""}
-                `}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={quality === option.value ? "text-primary" : "text-muted-foreground"}>
-                    {option.icon}
-                  </span>
-                  <span className="font-medium">{option.label}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{option.description}</p>
-                <p className="text-xs text-muted-foreground mt-1">{option.dpi} DPI</p>
-              </button>
-            ))}
-          </div>
+          <FileUploadZone
+            onFilesAdded={handleFileSelect}
+            accept={{ "application/pdf": [".pdf"] }}
+            maxFiles={1}
+            disabled={status === "processing" || ghostscriptAvailable === false}
+          />
         </div>
 
-        {/* File upload */}
-        {!processedFile && (
-          <div className="mb-6">
-            <FileUploadZone
-              onFilesAdded={handleFileSelect}
-              accept={{ "application/pdf": [".pdf"] }}
-              maxFiles={1}
-              disabled={status === "processing" || ghostscriptAvailable === false}
-            />
-          </div>
-        )}
-
-        {/* Selected file */}
-        {file && !processedFile && (
-          <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+        {/* Selected file info */}
+        {file && (
+          <div className="bg-muted rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FileArchive className="w-8 h-8 text-primary" />
                 <div>
                   <p className="font-medium">{file.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {formatFileSize(file.size)}
+                    {formatFileSize(originalSize)}
                   </p>
                 </div>
               </div>
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={handleFileRemove}
                 disabled={status === "processing"}
               >
-                Remove
+                <AlertCircle className="w-4 h-4" />
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Quality selection */}
+        {file && !processedFile && ghostscriptAvailable !== false && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-3">
+              Compression Level
+            </label>
+            <div className="grid gap-3">
+              {qualityOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setQuality(option.value)}
+                  disabled={status === "processing"}
+                  className={`flex items-center gap-4 p-4 rounded-lg border-2 transition-colors text-left ${
+                    quality === option.value
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg ${
+                    quality === option.value ? "bg-primary text-primary-foreground" : "bg-muted"
+                  }`}>
+                    {option.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{option.label}</p>
+                    <p className="text-sm text-muted-foreground">{option.description}</p>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {option.dpi} DPI
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -299,7 +274,6 @@ export default function CompressPDFPage() {
               onClick={handleCompress}
               disabled={status === "processing"}
               size="lg"
-              className="min-w-[200px]"
             >
               {status === "processing" ? (
                 <>
@@ -316,33 +290,41 @@ export default function CompressPDFPage() {
           </div>
         )}
 
+        {/* Processing status */}
+        {status === "processing" && (
+          <div className="text-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Compressing your PDF...</p>
+          </div>
+        )}
+
         {/* Error message */}
         {error && status === "error" && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-red-800">Compression failed</h3>
+                <p className="text-sm text-red-600 mt-1">{error}</p>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Success result */}
-        {processedFile && status === "success" && (
-          <div className="mb-6 p-6 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-8 h-8 text-green-500" />
-                <div>
-                  <h3 className="font-medium text-green-800">Compression Complete!</h3>
-                  <p className="text-sm text-green-600">
-                    {processedFile.name}
-                  </p>
-                </div>
+        {/* Results */}
+        {status === "success" && processedFile && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <CheckCircle2 className="w-6 h-6 text-green-600" />
+              <div>
+                <h3 className="font-medium text-green-800">Compression Complete!</h3>
+                <p className="text-sm text-green-600">
+                  Your PDF has been compressed successfully
+                </p>
               </div>
             </div>
 
-            {/* Size comparison */}
-            <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="p-3 bg-white rounded-lg">
                 <p className="text-xs text-muted-foreground mb-1">Original</p>
                 <p className="font-semibold">{formatFileSize(originalSize)}</p>
@@ -351,17 +333,20 @@ export default function CompressPDFPage() {
                 <p className="text-xs text-muted-foreground mb-1">Compressed</p>
                 <p className="font-semibold text-green-600">{formatFileSize(compressedSize)}</p>
               </div>
-              <div className="p-3 bg-white rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">Reduced</p>
-                <p className="font-semibold text-green-600">{compressionRatio}%</p>
-              </div>
             </div>
 
-            {/* Actions */}
+            <div className="text-center mb-4">
+              <p className="text-2xl font-bold text-green-600">
+                {compressionRatio}% smaller
+              </p>
+            </div>
+
             <div className="flex gap-3">
-              <Button onClick={handleDownload} className="flex-1">
-                <Download className="w-4 h-4 mr-2" />
-                Download Compressed PDF
+              <Button className="flex-1" asChild>
+                <a href={processedFile.url} download={processedFile.name}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Compressed PDF
+                </a>
               </Button>
               <Button variant="outline" onClick={handleReset}>
                 Compress Another
@@ -370,7 +355,6 @@ export default function CompressPDFPage() {
           </div>
         )}
       </main>
-
       <Footer />
     </div>
   );
