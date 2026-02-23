@@ -6,8 +6,7 @@ import { Footer } from "@/components/footer";
 import { FileUploadZone } from "@/components/file-upload-zone";
 import { Button } from "@/components/ui/button";
 import { PDFDocument } from "pdf-lib";
-import { ProcessedFile }
-import { UploadedFile } from "@/types/pdf";
+import { ProcessedFile } from "@/types/pdf";
 import { 
   FileSpreadsheet, 
   Download, 
@@ -144,7 +143,7 @@ export default function ImageToPDFPage() {
         {!processedFile && (
           <div className="mb-6">
             <FileUploadZone
-              onFilesAdded={handleFileSelect}
+              onFileSelect={handleFileSelect}
               accept={{ 
                 "image/jpeg": [".jpg", ".jpeg"],
                 "image/png": [".png"]

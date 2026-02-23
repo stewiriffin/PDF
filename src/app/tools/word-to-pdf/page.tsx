@@ -5,8 +5,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { FileUploadZone } from "@/components/file-upload-zone";
 import { Button } from "@/components/ui/button";
-import { ProcessedFile }
-import { UploadedFile } from "@/types/pdf";
+import { ProcessedFile } from "@/types/pdf";
 import { 
   FileText, 
   Download, 
@@ -24,9 +23,9 @@ export default function WordToPDFPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Handle file selection
-  const handleFileSelect = useCallback((uploadedFiles: UploadedFile[]) => {
+  const handleFileSelect = useCallback((files: File[]) => {
     if (files.length > 0) {
-      setFile(uploadedFiles[0].file);
+      setFile(files[0]);
       setProcessedFile(null);
       setStatus("idle");
       setError(null);
@@ -107,7 +106,7 @@ export default function WordToPDFPage() {
         {!processedFile && (
           <div className="mb-6">
             <FileUploadZone
-              onFilesAdded={handleFileSelect}
+              onFileSelect={handleFileSelect}
               accept={{ 
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
                 "application/msword": [".doc"]
