@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { 
-  compressPDFStream, 
+  compressPDF, 
   checkGhostscriptInstalled,
   CompressionQuality 
 } from "@/lib/pdf-compress";
@@ -54,26 +54,28 @@ export async function POST(request: NextRequest) {
     const qualitySuffix = quality === "recommended" ? "" : `_${quality}`;
     const outputFilename = `${baseName}_compressed${qualitySuffix}.pdf`;
 
-    // Create a PassThrough stream to handle the response
-    const { PassThrough } = await import("stream");
-    const passThrough = new PassThrough();
+    // Perform compression and get the result
+    const result = await compressPDF(file, quality);
 
-    // Set up the response with streaming
-    const response = new NextResponse(passThrough, {
+    if (!result.success || !result.blob) {
+      return NextResponse.json(
+        { error: result.error || "Compression failed" },
+        { status: 500 }
+      );
+    }
+
+    // Convert Blob to Buffer
+    const arrayBuffer = await result.blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Return the compressed PDF
+    return new NextResponse(buffer, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${outputFilename}"`,
         "X-Quality-Level": quality,
       },
     });
-
-    // Start the compression in the background and pipe to response
-    compressPDFStream(file, quality, passThrough).catch((error) => {
-      console.error("Compression error:", error);
-      passThrough.destroy();
-    });
-
-    return response;
   } catch (error) {
     console.error("API route error:", error);
     return NextResponse.json(

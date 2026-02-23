@@ -15,13 +15,12 @@ import {
 } from "@/lib/actions/compress-pdf";
 import { ProcessedFile } from "@/types/pdf";
 import { 
-  Compress, 
+  Shrink,
   Download, 
   CheckCircle2, 
   AlertCircle,
   Zap,
-  Balance,
-  Printer,
+  Scale,
   FileArchive,
   Loader2
 } from "lucide-react";
@@ -50,14 +49,14 @@ const qualityOptions: QualityOption[] = [
   {
     value: "recommended",
     label: "Recommended",
-    icon: <Balance className="w-5 h-5" />,
+    icon: <Shrink className="w-5 h-5" />,
     description: "Balanced quality and file size",
     dpi: 150,
   },
   {
     value: "low",
     label: "Low",
-    icon: <Printer className="w-5 h-5" />,
+    icon: <Scale className="w-5 h-5" />,
     description: "Highest quality, best for printing",
     dpi: 300,
   },
@@ -194,7 +193,7 @@ export default function CompressPDFPage() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-            <Compress className="w-8 h-8 text-primary" />
+            <Shrink className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-3xl font-bold mb-2">Compress PDF</h1>
           <p className="text-muted-foreground">
@@ -308,7 +307,7 @@ export default function CompressPDFPage() {
                 </>
               ) : (
                 <>
-                  <Compress className="w-4 h-4 mr-2" />
+                  <Shrink className="w-4 h-4 mr-2" />
                   Compress PDF
                 </>
               )}

@@ -13,7 +13,7 @@ import {
 } from "@/lib/pdf-metadata";
 import { ProcessedFile } from "@/types/pdf";
 import { 
-  FileInfo, 
+  Info, 
   Download, 
   CheckCircle2, 
   AlertCircle,
@@ -175,7 +175,7 @@ export default function MetadataPage() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-600/10 mb-4">
-            <FileInfo className="w-8 h-8 text-slate-600" />
+            <Info className="w-8 h-8 text-slate-600" />
           </div>
           <h1 className="text-3xl font-bold mb-2">PDF Metadata</h1>
           <p className="text-muted-foreground">
