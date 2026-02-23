@@ -6,7 +6,8 @@ import { Footer } from "@/components/footer";
 import { FileUploadZone } from "@/components/file-upload-zone";
 import { Button } from "@/components/ui/button";
 import { PDFDocument, degrees } from "pdf-lib";
-import { ProcessedFile } from "@/types/pdf";
+import { ProcessedFile }
+import { UploadedFile } from "@/types/pdf";
 import { 
   RotateCw, 
   Download, 
@@ -28,9 +29,9 @@ export default function RotatePDFPage() {
   const [rotation, setRotation] = useState<RotationAngle>(90);
 
   // Handle file selection
-  const handleFileSelect = useCallback((files: File[]) => {
+  const handleFileSelect = useCallback((uploadedFiles: UploadedFile[]) => {
     if (files.length > 0) {
-      setFile(files[0]);
+      setFile(uploadedFiles[0].file);
       setProcessedFile(null);
       setStatus("idle");
       setError(null);
@@ -168,7 +169,7 @@ export default function RotatePDFPage() {
         {!processedFile && (
           <div className="mb-6">
             <FileUploadZone
-              onFileSelect={handleFileSelect}
+              onFilesAdded={handleFileSelect}
               accept={{ "application/pdf": [".pdf"] }}
               maxFiles={1}
               disabled={status === "processing"}

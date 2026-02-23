@@ -14,6 +14,7 @@ import {
   CompressionResult 
 } from "@/lib/actions/compress-pdf";
 import { ProcessedFile } from "@/types/pdf";
+import { UploadedFile } from "@/components/file-upload-zone";
 import { 
   Shrink,
   Download, 
@@ -95,10 +96,10 @@ export default function CompressPDFPage() {
   }, []);
 
   // Handle file selection
-  const handleFileSelect = useCallback((files: File[]) => {
-    if (files.length > 0) {
-      setFile(files[0]);
-      setOriginalSize(files[0].size);
+  const handleFileSelect = useCallback((uploadedFiles: UploadedFile[]) => {
+    if (uploadedFiles.length > 0) {
+      setFile(uploadedFiles[0].file);
+      setOriginalSize(uploadedFiles[0].file.size);
       setProcessedFile(null);
       setStatus("idle");
       setError(null);
@@ -258,7 +259,7 @@ export default function CompressPDFPage() {
         {!processedFile && (
           <div className="mb-6">
             <FileUploadZone
-              onFileSelect={handleFileSelect}
+              onFilesAdded={handleFileSelect}
               accept={{ "application/pdf": [".pdf"] }}
               maxFiles={1}
               disabled={status === "processing" || ghostscriptAvailable === false}

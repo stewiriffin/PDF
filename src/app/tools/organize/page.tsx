@@ -11,7 +11,8 @@ import {
   generateOrganizedFileName,
   PDFPage 
 } from "@/lib/pdf-organizer";
-import { ProcessedFile } from "@/types/pdf";
+import { ProcessedFile }
+import { UploadedFile } from "@/types/pdf";
 import { 
   LayoutGrid, 
   Download, 
@@ -69,9 +70,9 @@ export default function OrganizePDFPage() {
   }, [file]);
 
   // Handle file selection
-  const handleFileSelect = useCallback((files: File[]) => {
+  const handleFileSelect = useCallback((uploadedFiles: UploadedFile[]) => {
     if (files.length > 0) {
-      setFile(files[0]);
+      setFile(uploadedFiles[0].file);
       setProcessedFile(null);
       setError(null);
       setHistory([]);
@@ -222,7 +223,7 @@ export default function OrganizePDFPage() {
         {!file && status !== "ready" && (
           <div className="mb-6">
             <FileUploadZone
-              onFileSelect={handleFileSelect}
+              onFilesAdded={handleFileSelect}
               accept={{ "application/pdf": [".pdf"] }}
               maxFiles={1}
               disabled={status === "loading"}

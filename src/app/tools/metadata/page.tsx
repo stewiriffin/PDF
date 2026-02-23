@@ -12,6 +12,7 @@ import {
   PDFMetadata 
 } from "@/lib/pdf-metadata";
 import { ProcessedFile } from "@/types/pdf";
+import { UploadedFile } from "@/components/file-upload-zone";
 import { 
   Info, 
   Download, 
@@ -74,9 +75,9 @@ export default function MetadataPage() {
   }, [file]);
 
   // Handle file selection
-  const handleFileSelect = useCallback((files: File[]) => {
-    if (files.length > 0) {
-      setFile(files[0]);
+  const handleFileSelect = useCallback((uploadedFiles: UploadedFile[]) => {
+    if (uploadedFiles.length > 0) {
+      setFile(uploadedFiles[0].file);
       setProcessedFile(null);
       setError(null);
     }
@@ -187,7 +188,7 @@ export default function MetadataPage() {
         {!file && status !== "ready" && (
           <div className="mb-6">
             <FileUploadZone
-              onFileSelect={handleFileSelect}
+              onFilesAdded={handleFileSelect}
               accept={{ "application/pdf": [".pdf"] }}
               maxFiles={1}
               disabled={status === "loading"}

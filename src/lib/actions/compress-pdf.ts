@@ -2,7 +2,6 @@
 
 import { 
   compressPDF, 
-  compressPDFStream,
   checkGhostscriptInstalled,
   getGhostscriptVersion,
   calculateCompressionRatio,
