@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { FileUploadZone } from "@/components/file-upload-zone";
@@ -28,7 +28,7 @@ import {
   FileArchive
 } from "lucide-react";
 import { toast } from "sonner";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function OrganizePDFPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -115,9 +115,6 @@ export default function OrganizePDFPage() {
 
   // Delete a single page
   const deletePage = useCallback((index: number) => {
-    const pageToDelete = pages[index];
-    if (!pageToDelete) return;
-    
     setPages(prev => {
       const newPages = prev.map((page, i) => {
         if (i === index) {
@@ -213,19 +210,15 @@ export default function OrganizePDFPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-cyan-600/10 mb-4">
             <LayoutGrid className="w-8 h-8 text-cyan-600" />
           </div>
           <h1 className="text-3xl font-bold mb-2">Organize PDF Pages</h1>
-          <p className="text-muted-foreground">
-            Rotate, delete, and reorder individual pages
-          </p>
+          <p className="text-muted-foreground">Rotate, delete, and reorder individual pages</p>
         </div>
 
-        {/* File upload */}
         {!file && status !== "ready" && (
           <div className="mb-6">
             <FileUploadZone
@@ -237,7 +230,6 @@ export default function OrganizePDFPage() {
           </div>
         )}
 
-        {/* Selected file info */}
         {file && (
           <div className="mb-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -249,18 +241,12 @@ export default function OrganizePDFPage() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleFileRemove}
-              disabled={status === "processing"}
-            >
+            <Button variant="ghost" size="sm" onClick={handleFileRemove} disabled={status === "processing"}>
               Change File
             </Button>
           </div>
         )}
 
-        {/* Loading state */}
         {status === "loading" && (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-600 mb-4" />
@@ -268,26 +254,14 @@ export default function OrganizePDFPage() {
           </div>
         )}
 
-        {/* Page grid */}
         {status === "ready" && pages.length > 0 && (
           <>
-            {/* Toolbar */}
             <div className="flex items-center justify-between mb-4 p-2 bg-card rounded-lg border">
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={undo}
-                  disabled={historyIndex <= 0}
-                >
+                <Button variant="outline" size="sm" onClick={undo} disabled={historyIndex <= 0}>
                   <Undo className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={redo}
-                  disabled={historyIndex >= history.length - 1}
-                >
+                <Button variant="outline" size="sm" onClick={redo} disabled={historyIndex >= history.length - 1}>
                   <Redo className="w-4 h-4" />
                 </Button>
                 <span className="text-sm text-muted-foreground ml-2">
@@ -295,124 +269,59 @@ export default function OrganizePDFPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {activePagesCount} pages
-                </span>
-                <Button
-                  onClick={handleSave}
-                  disabled={status === "processing"}
-                  size="sm"
-                >
-                  {status === "processing" ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4 mr-2" />
-                  )}
+                <span className="text-sm text-muted-foreground">{activePagesCount} pages</span>
+                <Button onClick={handleSave} disabled={status === "processing"} size="sm">
+                  {status === "processing" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Save PDF
                 </Button>
               </div>
             </div>
 
-            {/* Page Grid with Drag and Drop */}
-            <Reorder.Group axis="x" values={pages} onReorder={setPages} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               <AnimatePresence>
                 {pages.map((page, index) => (
-                  <Reorder.Item
-                    key={page.index}
-                    value={page}
-                    layoutId={String(page.index)}
-                  
                   <motion.div
                     key={page.index}
                     layout
                     initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ 
-                      opacity: page.deleted ? 0.3 : 1, 
-                      scale: 1,
-                      rotate: page.rotation,
-                    }}
+                    animate={{ opacity: page.deleted ? 0.3 : 1, scale: 1, rotate: page.rotation }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.3 }}
-                    className={`
-                      relative group rounded-lg overflow-hidden border-2 
-                      ${page.deleted ? "border-red-300" : "border-transparent"}
-                      ${zoomPage === index ? "ring-2 ring-primary" : ""}
-                    `}
+                    className={`relative group rounded-lg overflow-hidden border-2 ${page.deleted ? "border-red-300" : "border-transparent"} ${zoomPage === index ? "ring-2 ring-primary" : ""}`}
                     onMouseEnter={() => setZoomPage(index)}
                     onMouseLeave={() => setZoomPage(null)}
                   >
-                    {/* Page preview placeholder */}
-                    <div 
-                      className={`
-                        aspect-[3/4] bg-muted flex items-center justify-center
-                        transition-transform duration-300
-                      `}
-                      style={{
-                        transform: `rotate(${page.rotation}deg)`,
-                      }}
-                    >
+                    <div className={`aspect-[3/4] bg-muted flex items-center justify-center transition-transform duration-300`} style={{ transform: `rotate(${page.rotation}deg)` }}>
                       <FileText className="w-12 h-12 text-muted-foreground" />
                     </div>
 
-                    {/* Page number badge */}
                     <div className="absolute top-2 left-2 bg-background/80 px-2 py-0.5 rounded text-xs font-medium">
                       {page.pageNumber}
                     </div>
 
-                    {/* Deleted badge */}
                     {page.deleted && (
                       <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
-                        <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                          Deleted
-                        </span>
+                        <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">Deleted</span>
                       </div>
                     )}
 
-                    {/* Action buttons - visible on hover */}
-                    <div className={`
-                      absolute bottom-2 left-2 right-2 flex justify-center gap-2
-                      transition-opacity duration-200
-                      ${zoomPage === index || page.deleted ? "opacity-100" : "opacity-0"}
-                    `}>
-                      {/* Rotate button */}
+                    <div className={`absolute bottom-2 left-2 right-2 flex justify-center gap-2 transition-opacity duration-200 ${zoomPage === index || page.deleted ? "opacity-100" : "opacity-0"}`}>
                       {!page.deleted && (
-                        <button
-                          onClick={() => rotatePage(index)}
-                          className="p-2 bg-background/90 rounded-full hover:bg-primary hover:text-white transition-colors"
-                          title="Rotate 90°"
-                        >
+                        <button onClick={() => rotatePage(index)} className="p-2 bg-background/90 rounded-full hover:bg-primary hover:text-white transition-colors" title="Rotate 90°">
                           <RotateCw className="w-4 h-4" />
                         </button>
                       )}
-                      
-                      {/* Delete/Restore button */}
-                      <button
-                        onClick={() => deletePage(index)}
-                        className={`
-                          p-2 rounded-full transition-colors
-                          ${page.deleted 
-                            ? "bg-green-500 hover:bg-green-600 text-white" 
-                            : "bg-red-500 hover:bg-red-600 text-white"
-                          }
-                        `}
-                        title={page.deleted ? "Restore" : "Delete"}
-                      >
-                        {page.deleted ? (
-                          <Undo className="w-4 h-4" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
+                      <button onClick={() => deletePage(index)} className={`p-2 rounded-full transition-colors ${page.deleted ? "bg-green-500 hover:bg-green-600 text-white" : "bg-red-500 hover:bg-red-600 text-white"}`} title={page.deleted ? "Restore" : "Delete"}>
+                        {page.deleted ? <Undo className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     </div>
 
-                    {/* Zoom indicator */}
                     {zoomPage === index && !page.deleted && (
                       <div className="absolute top-2 right-2 p-1 bg-background/80 rounded">
                         <ZoomIn className="w-3 h-3 text-muted-foreground" />
                       </div>
                     )}
 
-                    {/* Rotation indicator */}
                     {page.rotation !== 0 && !page.deleted && (
                       <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-0.5 rounded-full">
                         {page.rotation}°
@@ -425,7 +334,6 @@ export default function OrganizePDFPage() {
           </>
         )}
 
-        {/* Error message */}
         {error && status === "error" && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-3">
@@ -435,7 +343,6 @@ export default function OrganizePDFPage() {
           </div>
         )}
 
-        {/* Success result */}
         {processedFile && status === "success" && (
           <div className="mb-6 p-6 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center justify-between mb-4">
@@ -443,26 +350,20 @@ export default function OrganizePDFPage() {
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
                 <div>
                   <h3 className="font-medium text-green-800">PDF Saved!</h3>
-                  <p className="text-sm text-green-600">
-                    {processedFile.name}
-                  </p>
+                  <p className="text-sm text-green-600">{processedFile.name}</p>
                 </div>
               </div>
             </div>
-
             <div className="flex gap-3">
               <Button onClick={handleDownload} className="flex-1">
                 <Download className="w-4 h-4 mr-2" />
                 Download Organized PDF
               </Button>
-              <Button variant="outline" onClick={handleReset}>
-                Organize Another
-              </Button>
+              <Button variant="outline" onClick={handleReset}>Organize Another</Button>
             </div>
           </div>
         )}
       </main>
-
       <Footer />
     </div>
   );
